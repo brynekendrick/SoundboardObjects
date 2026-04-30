@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="@color/white">
+
+    <!-- Logo -->
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="300dp"
+        android:layout_height="150dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="30dp"
+        android:src="@drawable/logo" />
+
+    <!-- Login Header -->
+    <TextView
+        android:id="@+id/txt_login"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/logo"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:text="LOG-IN"
+        android:textColor="@color/black"
+        android:textSize="25sp"
+        android:textStyle="bold" />
+
+    <!-- Username Label -->
+    <TextView
+        android:id="@+id/txt_user"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/txt_login"
+        android:layout_marginTop="24dp"
+        android:text="Username"
+        android:textColor="@color/black"
+        android:textSize="18sp" />
+
+    <!-- Username Input -->
+
+    <!-- Password Label -->
+    <EditText
+        android:id="@+id/edittxt_username"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/txt_user"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="#42f55d"
+        android:hint="Enter username"
+        android:padding="10dp"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/txt_password"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/edittxt_username"
+        android:layout_marginTop="24dp"
+        android:text="Password"
+        android:textColor="@color/black"
+        android:textSize="18sp" />
+
+    <!-- Password Input -->
+    <EditText
+        android:id="@+id/edittxt_password"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/txt_password"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="#42f55d"
+        android:hint="Enter password"
+        android:padding="10dp"
+        android:textSize="16sp"
+        android:inputType="textPassword" />
+
+    <!-- Forgot Password -->
+    <TextView
+        android:id="@+id/txt_editpassword"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/edittxt_password"
+        android:layout_marginTop="8dp"
+        android:layout_alignParentEnd="true"
+        android:text="Forgot Password?"
+        android:textColor="#a51c30"
+        android:textSize="14sp" />
+
+    <Button
+        android:id="@+id/button_login"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/txt_editpassword"
+        android:layout_marginTop="24dp"
+        android:backgroundTint="@color/black"
+        android:text="Login"
+        android:textColor="@color/white"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/LoginRegister"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/button_login"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:text="Don't have an account?"
+        android:textColor="@color/black"
+        android:textSize="14sp" />
+
+</RelativeLayout>

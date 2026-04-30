@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <RelativeLayout
+        android:layout_width="360dp"
+        android:layout_height="480dp"
+        android:layout_centerInParent="true"
+        android:background="@android:color/white">
+
+        <ImageView
+
+            android:id="@+id/logo_logout"
+            android:layout_width="wrap_content"
+            android:layout_height="150dp"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentTop="true"
+            android:paddingTop="60dp"
+            android:src="@drawable/logo"
+            />
+
+        <TextView
+            android:paddingTop="10dp"
+            android:id="@+id/message_logout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/black"
+            android:text="LOG-OUT"
+            android:textSize="25sp"
+            android:layout_below="@id/logo_logout"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="20dp" />
+
+        <TextView
+            android:paddingTop="50dp"
+            android:id="@+id/message2_logout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/message_logout"
+            android:text="Hello user!"
+            android:layout_centerHorizontal="true"
+            />
+
+
+        <TextView
+            android:paddingTop="10dp"
+            android:id="@+id/message3_logout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/message2_logout"
+            android:text="Are you sure you want to log out?"
+            android:layout_centerHorizontal="true"
+            />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_below="@id/message3_logout"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="20dp"
+            android:paddingTop="30dp"
+            android:layout_height="wrap_content"
+            android:layout_width="300dp">
+
+            <Button
+                android:id="@+id/btnCan"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Cancel"
+                android:textColor="@android:color/white"
+                android:background="@android:color/black"
+                android:layout_marginEnd="10dp"
+                />
+
+            <Button
+                android:id="@+id/btnOut"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Log Out"
+                android:textColor="@android:color/black"
+                android:background="#42f55d"
+                android:layout_marginStart="10dp"
+                />
+
+        </LinearLayout>
+
+
+
+
+    </RelativeLayout>
+
+</RelativeLayout>
