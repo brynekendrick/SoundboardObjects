@@ -11,8 +11,15 @@ import androidx.appcompat.widget.Toolbar
 import com.example.mobdev.EditProfileActivity
 import com.example.mobdev.R
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.auth.FirebaseAuth
+
 
 class SettingsActivity : AppCompatActivity() {
+
+    private val auth = FirebaseAuth.getInstance()
+    private val database = FirebaseDatabase.getInstance()
+    private val settingsRef = database.getReference("settings")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,8 +79,27 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupSettingsSwitches() {
         val notificationSwitch = findViewById<SwitchCompat>(R.id.switch_notifications)
+
+        val userId = auth.currentUser?.uid ?: return // temporary (we will replace later with login user)
+
+        // LOAD saved value
+        settingsRef.child(userId).child("notifications").get()
+            .addOnSuccessListener {
+                val savedValue = it.getValue(Boolean::class.java) ?: false
+                notificationSwitch.isChecked = savedValue
+            }
+
+        // SAVE value when changed
         notificationSwitch.setOnCheckedChangeListener { _, isChecked ->
-            val message = if (isChecked) "Notifications enabled" else "Notifications disabled"
+            settingsRef.child(userId)
+                .child("notifications")
+                .setValue(isChecked)
+
+            val message = if (isChecked)
+                "Notifications enabled"
+            else
+                "Notifications disabled"
+
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
 

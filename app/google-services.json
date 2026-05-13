@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "873817149829",
+    "project_id": "soundboardobjects",
+    "storage_bucket": "soundboardobjects.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:873817149829:android:e6d27d3695b89bca0174ec",
+        "android_client_info": {
+          "package_name": "com.example.mobdev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDf7JFGY5XnMw2kSlTx-p1MYdDbc39phPo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
