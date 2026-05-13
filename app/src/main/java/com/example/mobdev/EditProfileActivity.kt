@@ -50,9 +50,13 @@ class EditProfileActivity : AppCompatActivity() {
     }
 
     private fun loadUserData() {
-        usernameEditText.setText("SoundMaster")
-        emailEditText.setText("user@example.com")
-        bioEditText.setText("I love creating and sharing sound effects!")
+        usernameEditText.setText(UserSession.getUsername(this))
+        val email = UserSession.getEmail(this)
+        emailEditText.setText(if (email.isBlank()) "" else email)
+        val bio = UserSession.getBio(this)
+        bioEditText.setText(
+            if (bio.isBlank()) "I love creating and sharing sound effects!" else bio
+        )
     }
 
     private fun setupListeners() {
@@ -80,6 +84,7 @@ class EditProfileActivity : AppCompatActivity() {
             return
         }
 
+        UserSession.saveProfile(this, username, email, bio)
         Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show()
         finish()
     }

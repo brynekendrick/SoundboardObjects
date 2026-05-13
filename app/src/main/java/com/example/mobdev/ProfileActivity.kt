@@ -4,12 +4,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.mobdev.EditProfileActivity
+import com.example.mobdev.LogoutActivity
 import com.example.mobdev.R
+import com.example.mobdev.UserSession
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.navigation.NavigationBarView
 
 class ProfileActivity : AppCompatActivity() {
 
@@ -33,24 +33,29 @@ class ProfileActivity : AppCompatActivity() {
         buttonEditProfile = findViewById(R.id.button_edit_profile)
         buttonLogout = findViewById(R.id.button_logout)
 
-        textUsername.text = "User123"
-        textMemberSince.text = "Member since: May 2023"
-        textSoundsPlayedCount.text = "15"
-        textFavoritesCount.text = "8"
-        textCreatedCount.text = "5"
-
         buttonEditProfile.setOnClickListener {
-            val intent = Intent(this, EditProfileActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, EditProfileActivity::class.java))
         }
 
         buttonLogout.setOnClickListener {
-            val logout = Intent(this, Class.forName("com.example.mobdev.LogoutActivity"))
-            startActivity(logout)
+            startActivity(Intent(this, LogoutActivity::class.java))
             finish()
         }
 
         setupBottomNavigation()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        bindProfileFields()
+    }
+
+    private fun bindProfileFields() {
+        textUsername.text = UserSession.getUsername(this)
+        textMemberSince.text = UserSession.getMemberSinceLabel(this)
+        textSoundsPlayedCount.text = "—"
+        textFavoritesCount.text = "—"
+        textCreatedCount.text = UserSession.getCreatedSoundsCount(this).toString()
     }
 
     private fun setupBottomNavigation() {
@@ -60,34 +65,27 @@ class ProfileActivity : AppCompatActivity() {
         bottomNavigation.setOnItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_home -> {
-                    try {
-                        val intent = Intent(this, Class.forName("com.example.soundboard.SoundboardActivity"))
-                        startActivity(intent)
-                        finish()
-                        true
-                    } catch (e: Exception) {
-                        Toast.makeText(this, "Error opening Soundboard: ${e.message}", Toast.LENGTH_SHORT).show()
-                        false
-                    }
+                    startActivity(
+                        Intent(this, SoundboardActivity::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    )
+                    finish()
+                    true
                 }
                 R.id.nav_favorites -> {
-                    Toast.makeText(this, "Favorites feature coming soon", Toast.LENGTH_SHORT).show()
+                    startActivity(
+                        Intent(this, SoundboardActivity::class.java)
+                            .putExtra(SoundboardActivity.EXTRA_OPEN_FAVORITES, true)
+                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    )
+                    finish()
                     true
                 }
-                R.id.nav_profile -> {
-                    // Already on profile, do nothing
-                    true
-                }
+                R.id.nav_profile -> true
                 R.id.nav_settings -> {
-                    try {
-                        val intent = Intent(this, Class.forName("com.example.soundboard.SettingsActivity"))
-                        startActivity(intent)
-                        finish()
-                        true
-                    } catch (e: Exception) {
-                        Toast.makeText(this, "Error opening Settings: ${e.message}", Toast.LENGTH_SHORT).show()
-                        false
-                    }
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                    finish()
+                    true
                 }
                 else -> false
             }

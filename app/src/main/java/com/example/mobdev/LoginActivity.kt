@@ -26,6 +26,7 @@ class LoginActivity : Activity() {
             val password = passwordEditText.text.toString().trim()
             if (username.isNotEmpty() && password.isNotEmpty()) {
                 Toast.makeText(this, "Logging in...", Toast.LENGTH_SHORT).show()
+                UserSession.onLogin(this, username)
                 val intent = Intent(this, SoundboardActivity::class.java)
                 startActivity(intent)
             } else {

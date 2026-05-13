@@ -39,8 +39,11 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nestedScrollView2"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="96dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -191,32 +194,11 @@
                 android:layout_height="1dp"
                 android:background="#DDDDDD" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:text="Favorite Sounds"
-                android:textColor="@color/black"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler_favorites"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false" />
-
-            <TextView
-                android:id="@+id/text_see_all_favorites"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="16dp"
-                android:padding="8dp"
-                android:text="See All Favorites"
-                android:textColor="#a51c30"
-                android:textSize="16sp" />
 
             <Button
                 android:id="@+id/button_logout"
@@ -236,7 +218,9 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="@color/black"
+        app:itemHorizontalTranslationEnabled="false"
         app:itemIconTint="@color/white"
         app:itemTextColor="@color/white"
+        app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_navigation_menu" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

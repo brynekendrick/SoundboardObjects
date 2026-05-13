@@ -2,6 +2,7 @@ package com.example.soundboard
 
 import android.content.Context
 import android.media.*
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
@@ -10,11 +11,13 @@ class SoundPlayer private constructor(private val context: Context) {
 
     companion object {
         private const val TAG = "SoundPlayer"
+        private val instanceLock = Any()
+
         @Volatile
         private var instance: SoundPlayer? = null
 
         fun getInstance(context: Context): SoundPlayer {
-            return instance ?: synchronized(this) {
+            return instance ?: synchronized(instanceLock) {
                 instance ?: SoundPlayer(context.applicationContext).also { instance = it }
             }
         }
@@ -75,9 +78,16 @@ class SoundPlayer private constructor(private val context: Context) {
             stopSound()
 
             mediaPlayer = MediaPlayer.create(context, resourceId)
-            mediaPlayer?.setOnCompletionListener {
+            mediaPlayer?.setOnCompletionListener { mp ->
                 isPlaying = false
                 completionListener?.onSoundCompleted(currentSoundName)
+                try {
+                    mp.release()
+                } catch (_: Exception) {
+                }
+                if (mediaPlayer === mp) {
+                    mediaPlayer = null
+                }
             }
             mediaPlayer?.start()
             isPlaying = true
@@ -88,21 +98,63 @@ class SoundPlayer private constructor(private val context: Context) {
         }
     }
 
-    fun stopSound() {
-        mediaPlayer?.let {
-            if (isPlaying) {
-                it.stop()
-                it.release()
-                mediaPlayer = null
+    fun playLongSoundFromUri(context: Context, uri: Uri, soundName: String) {
+        try {
+            stopSound()
+            mediaPlayer = MediaPlayer.create(context, uri)
+            if (mediaPlayer == null) {
+                Toast.makeText(context, "Could not open this audio file", Toast.LENGTH_SHORT).show()
+                return
+            }
+            mediaPlayer?.setOnCompletionListener { mp ->
                 isPlaying = false
+                completionListener?.onSoundCompleted(currentSoundName)
+                try {
+                    mp.release()
+                } catch (_: Exception) {
+                }
+                if (mediaPlayer === mp) {
+                    mediaPlayer = null
+                }
+            }
+            mediaPlayer?.start()
+            isPlaying = true
+            currentSoundName = soundName
+        } catch (e: Exception) {
+            Log.e(TAG, "Error playing uri sound: $soundName", e)
+            Toast.makeText(context, "Error playing imported sound", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun stopSound() {
+        mediaPlayer?.let { mp ->
+            try {
+                if (mp.isPlaying) {
+                    mp.stop()
+                }
+            } catch (_: Exception) {
+            }
+            try {
+                mp.release()
+            } catch (_: Exception) {
             }
         }
+        mediaPlayer = null
+        isPlaying = false
     }
 
     fun release() {
         stopSound()
-        soundPool.release()
+        try {
+            soundPool.release()
+        } catch (_: Exception) {
+        }
         soundMap.clear()
+        synchronized(instanceLock) {
+            if (instance === this@SoundPlayer) {
+                instance = null
+            }
+        }
     }
 
     fun isPlaying(): Boolean = isPlaying

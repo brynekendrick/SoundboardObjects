@@ -1,12 +1,13 @@
 package com.example.mobdev
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
-import com.example.mobdev.R
+import com.example.soundboard.SoundboardActivity
 
 class RegisterActivity : Activity() {
 
@@ -64,7 +65,13 @@ class RegisterActivity : Activity() {
     }
 
     private fun registerUser(username: String, password: String) {
+        UserSession.onRegister(this, username)
         showToast("Registration successful for $username")
+        startActivity(
+            Intent(this, SoundboardActivity::class.java).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            )
+        )
         finish()
     }
 

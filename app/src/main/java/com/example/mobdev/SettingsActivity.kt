@@ -34,13 +34,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupNavigationListeners() {
         findViewById<LinearLayout>(R.id.layout_edit_profile).setOnClickListener {
-            try {
-                val intent = Intent(this, Class.forName("com.example.mobdev.EditProfileActivity"))
-                startActivity(intent)
-            } catch (e: Exception) {
-                Toast.makeText(this, "Error opening Edit Profile: ${e.message}", Toast.LENGTH_SHORT).show()
-                e.printStackTrace()
-            }
+            startActivity(Intent(this, EditProfileActivity::class.java))
         }
 
         findViewById<LinearLayout>(R.id.layout_change_password).setOnClickListener {
@@ -77,62 +71,51 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupSettingsSwitches() {
-        // Notification switch
         val notificationSwitch = findViewById<SwitchCompat>(R.id.switch_notifications)
         notificationSwitch.setOnCheckedChangeListener { _, isChecked ->
             val message = if (isChecked) "Notifications enabled" else "Notifications disabled"
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
 
-        val appVersionTextView = findViewById<TextView>(R.id.text_app_version)
-        appVersionTextView.text = "1.0.0" // Would normally get from BuildConfig
+        findViewById<TextView>(R.id.text_app_version).text = "1.0.0"
     }
 
     private fun setupBottomNavigation() {
         val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottom_navigation)
         bottomNavigation.selectedItemId = R.id.nav_settings
 
-        bottomNavigation.setOnNavigationItemSelectedListener { menuItem ->
+        bottomNavigation.setOnItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_home -> {
-                    try {
-                        val intent = Intent(this, Class.forName("com.example.soundboard.SoundboardActivity"))
-                        startActivity(intent)
-                        finish()
-                        true
-                    } catch (e: Exception) {
-                        Toast.makeText(this, "Error opening Soundboard: ${e.message}", Toast.LENGTH_SHORT).show()
-                        e.printStackTrace()
-                        false
-                    }
+                    startActivity(
+                        Intent(this, SoundboardActivity::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    )
+                    finish()
+                    true
                 }
                 R.id.nav_favorites -> {
-                    Toast.makeText(this, "Favorites feature coming soon", Toast.LENGTH_SHORT).show()
+                    startActivity(
+                        Intent(this, SoundboardActivity::class.java)
+                            .putExtra(SoundboardActivity.EXTRA_OPEN_FAVORITES, true)
+                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    )
+                    finish()
                     true
                 }
                 R.id.nav_profile -> {
-                    try {
-                        val intent = Intent(this, Class.forName("com.example.soundboard.ProfileActivity"))
-                        startActivity(intent)
-                        finish()
-                        true
-                    } catch (e: Exception) {
-                        Toast.makeText(this, "Error opening Profile: ${e.message}", Toast.LENGTH_SHORT).show()
-                        e.printStackTrace()
-                        false
-                    }
-                }
-                R.id.nav_settings -> {
-                    // Already on settings, do nothing
+                    startActivity(Intent(this, ProfileActivity::class.java))
+                    finish()
                     true
                 }
+                R.id.nav_settings -> true
                 else -> false
             }
         }
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        onBackPressed()
+        onBackPressedDispatcher.onBackPressed()
         return true
     }
 }

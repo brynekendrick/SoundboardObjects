@@ -25,6 +25,8 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="96dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -473,7 +475,9 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="@color/black"
+        app:itemHorizontalTranslationEnabled="false"
         app:itemIconTint="@color/white"
+        app:labelVisibilityMode="labeled"
         app:itemTextColor="@color/white"
         app:menu="@menu/bottom_navigation_menu" />
 
