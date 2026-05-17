@@ -15,33 +15,51 @@ class LoginActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.login)
 
-        val usernameEditText: EditText = findViewById(R.id.edittxt_username)
+        val emailEditText: EditText = findViewById(R.id.edittxt_username)
         val passwordEditText: EditText = findViewById(R.id.edittxt_password)
         val loginButton: Button = findViewById(R.id.button_login)
-        val forgotPasswordText: TextView = findViewById(R.id.txt_editpassword)
-        val registerText: TextView = findViewById(R.id.LoginRegister)
 
         loginButton.setOnClickListener {
-            val username = usernameEditText.text.toString().trim()
-            val password = passwordEditText.text.toString().trim()
-            if (username.isNotEmpty() && password.isNotEmpty()) {
-                Toast.makeText(this, "Logging in...", Toast.LENGTH_SHORT).show()
-                UserSession.onLogin(this, username)
-                val intent = Intent(this, SoundboardActivity::class.java)
-                startActivity(intent)
-            } else {
-                Toast.makeText(this, "Please enter both username and password", Toast.LENGTH_SHORT).show()
+            val email = emailEditText.text.toString().trim()
+            val password = passwordEditText.text.toString()
+
+            if (email.isEmpty() || !email.contains("@")) {
+                Toast.makeText(this, "Please enter a valid email.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+            if (password.isEmpty()) {
+                Toast.makeText(this, "Please enter your password.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            loginButton.isEnabled = false
+            Toast.makeText(this, "Logging in...", Toast.LENGTH_SHORT).show()
+
+            UserSession.firebaseLogin(
+                email = email,
+                password = password,
+                onSuccess = {
+                    UserSession.onFirebaseAuthSuccess(
+                        this,
+                        email,
+                        email.substringBefore("@")
+                    )
+                    startActivity(Intent(this, SoundboardActivity::class.java))
+                    finish()
+                },
+                onError = { message ->
+                    loginButton.isEnabled = true
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                }
+            )
         }
 
-        forgotPasswordText.setOnClickListener {
-            Toast.makeText(this, "Forgot password clicked", Toast.LENGTH_SHORT).show()
+        findViewById<TextView>(R.id.txt_editpassword).setOnClickListener {
+            Toast.makeText(this, "Use Firebase Console to reset password for now.", Toast.LENGTH_SHORT).show()
         }
 
-        registerText.setOnClickListener {
-            Toast.makeText(this, "Register clicked", Toast.LENGTH_SHORT).show()
-            val intent = Intent(this, RegisterActivity::class.java)
-            startActivity(intent)
+        findViewById<TextView>(R.id.LoginRegister).setOnClickListener {
+            startActivity(Intent(this, RegisterActivity::class.java))
         }
     }
 }

@@ -1,6 +1,9 @@
 package com.example.mobdev
 
 import android.content.Context
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -9,8 +12,7 @@ import java.util.Locale
 import java.util.UUID
 
 /**
- * SharedPreferences-backed session for guest, login, and register flows.
- * Same file name as LogoutActivity so logout clears all keys.
+ * SharedPreferences session + Firebase Auth/Firestore (users collection).
  */
 object UserSession {
     const val PREFS_NAME = "user_prefs"
@@ -21,6 +23,9 @@ object UserSession {
     private const val KEY_MEMBER_SINCE = "member_since"
     private const val KEY_CREATED_SOUNDS = "created_sounds_count"
     private const val KEY_CUSTOM_SOUNDS_JSON = "custom_sounds_json"
+
+    private val firebaseAuth: FirebaseAuth get() = FirebaseAuth.getInstance()
+    private val firestore: FirebaseFirestore get() = FirebaseFirestore.getInstance()
 
     private fun prefs(ctx: Context) =
         ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -50,6 +55,23 @@ object UserSession {
         if (p.getString(KEY_MEMBER_SINCE, null).isNullOrBlank()) {
             val fmt = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
             editor.putString(KEY_MEMBER_SINCE, "Member since: ${fmt.format(Date())}")
+        }
+        editor.apply()
+    }
+
+    fun onFirebaseAuthSuccess(
+        ctx: Context,
+        email: String,
+        displayName: String,
+        bio: String? = null
+    ) {
+        val fmt = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+        val editor = prefs(ctx).edit()
+            .putString(KEY_USERNAME, displayName.trim().ifBlank { email.substringBefore("@") })
+            .putString(KEY_EMAIL, email.trim())
+            .putString(KEY_MEMBER_SINCE, "Member since: ${fmt.format(Date())}")
+        if (!bio.isNullOrBlank()) {
+            editor.putString(KEY_BIO, bio.trim())
         }
         editor.apply()
     }
@@ -129,5 +151,94 @@ object UserSession {
         arr.put(o)
         saveCustomSoundsJson(ctx, arr.toString())
         incrementCreatedSounds(ctx)
+    }
+
+    // --- Firebase ---
+
+    fun isFirebaseSignedIn(): Boolean = firebaseAuth.currentUser != null
+
+    fun firebaseSignOut() {
+        firebaseAuth.signOut()
+    }
+
+    fun firebaseRegister(
+        email: String,
+        password: String,
+        firstName: String,
+        lastName: String,
+        middleName: String?,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        firebaseAuth.createUserWithEmailAndPassword(email, password)
+            .addOnSuccessListener { result ->
+                val uid = result.user?.uid
+                if (uid == null) {
+                    onError("Registration failed: no user id.")
+                    return@addOnSuccessListener
+                }
+                writeFirestoreUser(uid, firstName, lastName, middleName, email, null, onSuccess, onError)
+            }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Registration failed.")
+            }
+    }
+
+    fun firebaseLogin(
+        email: String,
+        password: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        firebaseAuth.signInWithEmailAndPassword(email, password)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Login failed.")
+            }
+    }
+
+    fun firebaseSaveProfile(
+        firstName: String,
+        lastName: String,
+        email: String,
+        bio: String?,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val uid = firebaseAuth.currentUser?.uid
+        if (uid == null) {
+            onError("Not signed in.")
+            return
+        }
+        writeFirestoreUser(uid, firstName, lastName, null, email, bio, onSuccess, onError)
+    }
+
+    private fun writeFirestoreUser(
+        uid: String,
+        firstName: String,
+        lastName: String,
+        middleName: String?,
+        email: String,
+        bio: String?,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val data = hashMapOf<String, Any>(
+            "firstName" to firstName,
+            "lastName" to lastName,
+            "email" to email
+        )
+        if (!middleName.isNullOrBlank()) {
+            data["middleName"] = middleName
+        }
+        if (!bio.isNullOrBlank()) {
+            data["bio"] = bio
+        }
+        firestore.collection("users").document(uid)
+            .set(data, SetOptions.merge())
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Could not save to Firestore.")
+            }
     }
 }

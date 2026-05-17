@@ -21,7 +21,6 @@ class EditProfileActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_profile)
 
-
         onBackPressedDispatcher.addCallback(this) {
             finish()
         }
@@ -51,8 +50,7 @@ class EditProfileActivity : AppCompatActivity() {
 
     private fun loadUserData() {
         usernameEditText.setText(UserSession.getUsername(this))
-        val email = UserSession.getEmail(this)
-        emailEditText.setText(if (email.isBlank()) "" else email)
+        emailEditText.setText(UserSession.getEmail(this))
         val bio = UserSession.getBio(this)
         bioEditText.setText(
             if (bio.isBlank()) "I love creating and sharing sound effects!" else bio
@@ -60,10 +58,7 @@ class EditProfileActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        saveButton.setOnClickListener {
-            saveUserData()
-        }
-
+        saveButton.setOnClickListener { saveUserData() }
         profileImageView.setOnClickListener {
             Toast.makeText(this, "Change profile picture feature coming soon", Toast.LENGTH_SHORT).show()
         }
@@ -78,18 +73,41 @@ class EditProfileActivity : AppCompatActivity() {
             usernameEditText.error = "Username cannot be empty"
             return
         }
-
         if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             emailEditText.error = "Please enter a valid email address"
             return
         }
 
         UserSession.saveProfile(this, username, email, bio)
-        Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show()
-        finish()
+
+        if (!UserSession.isFirebaseSignedIn()) {
+            Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        val parts = username.split(" ", limit = 2)
+        val firstName = parts[0]
+        val lastName = if (parts.size > 1) parts[1] else ""
+
+        saveButton.isEnabled = false
+        UserSession.firebaseSaveProfile(
+            firstName = firstName,
+            lastName = lastName,
+            email = email,
+            bio = bio,
+            onSuccess = {
+                Toast.makeText(this, "Profile saved to Firestore", Toast.LENGTH_SHORT).show()
+                finish()
+            },
+            onError = { message ->
+                saveButton.isEnabled = true
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+            }
+        )
     }
 
-        override fun onSupportNavigateUp(): Boolean {
+    override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()
         return true
     }

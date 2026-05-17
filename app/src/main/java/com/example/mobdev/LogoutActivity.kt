@@ -22,6 +22,7 @@ class LogoutActivity : Activity() {
 
             val button_logout = findViewById<Button>(R.id.btnOut)
             button_logout.setOnClickListener {
+                UserSession.firebaseSignOut()
                 val sharedPreferences = getSharedPreferences("user_prefs", MODE_PRIVATE)
                 val editor = sharedPreferences.edit()
                 editor.clear()

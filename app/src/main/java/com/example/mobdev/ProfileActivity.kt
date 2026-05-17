@@ -51,11 +51,11 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun bindProfileFields() {
-        textUsername.text = UserSession.getUsername(this)
         textMemberSince.text = UserSession.getMemberSinceLabel(this)
         textSoundsPlayedCount.text = "—"
         textFavoritesCount.text = "—"
         textCreatedCount.text = UserSession.getCreatedSoundsCount(this).toString()
+        textUsername.text = UserSession.getUsername(this)
     }
 
     private fun setupBottomNavigation() {

@@ -11,71 +11,90 @@ import com.example.soundboard.SoundboardActivity
 
 class RegisterActivity : Activity() {
 
-    private lateinit var edtUsername: EditText
+    private lateinit var edtFirstName: EditText
+    private lateinit var edtMiddleName: EditText
+    private lateinit var edtLastName: EditText
+    private lateinit var edtEmail: EditText
     private lateinit var edtPassword: EditText
     private lateinit var edtConfirmPassword: EditText
     private lateinit var btnRegister: Button
-    private lateinit var txtRegisterGoogle: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.register)
 
-        edtUsername = findViewById(R.id.RegisterBtnUser)
+        edtFirstName = findViewById(R.id.edt_first_name)
+        edtMiddleName = findViewById(R.id.edt_middle_name)
+        edtLastName = findViewById(R.id.edt_last_name)
+        edtEmail = findViewById(R.id.edt_email)
         edtPassword = findViewById(R.id.RegisterBtnPass)
         edtConfirmPassword = findViewById(R.id.RegisterBtnCpass)
         btnRegister = findViewById(R.id.RegisterBtn)
-        txtRegisterGoogle = findViewById(R.id.txt_register_google)
 
-        btnRegister.setOnClickListener {
-            performRegistration()
-        }
+        btnRegister.setOnClickListener { performRegistration() }
 
-        txtRegisterGoogle.setOnClickListener {
-            Toast.makeText(this, "Google Registration Clicked", Toast.LENGTH_SHORT).show()
+        findViewById<TextView>(R.id.txt_register_google).setOnClickListener {
+            Toast.makeText(this, "Google sign-in is not set up yet.", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun performRegistration() {
-        val username = edtUsername.text.toString().trim()
-        val password = edtPassword.text.toString().trim()
-        val confirmPassword = edtConfirmPassword.text.toString().trim()
+        val firstName = edtFirstName.text.toString().trim()
+        val middleName = edtMiddleName.text.toString().trim()
+        val lastName = edtLastName.text.toString().trim()
+        val email = edtEmail.text.toString().trim()
+        val password = edtPassword.text.toString()
+        val confirmPassword = edtConfirmPassword.text.toString()
 
-        if (username.isEmpty()) {
-            showToast("Please enter a username.")
+        if (firstName.isEmpty() || lastName.isEmpty()) {
+            showToast("First name and last name are required.")
             return
         }
-
-        if (password.isEmpty()) {
-            showToast("Please enter a password.")
+        if (email.isEmpty() || !email.contains("@")) {
+            showToast("Please enter a valid email.")
             return
         }
-
-        if (confirmPassword.isEmpty()) {
-            showToast("Please confirm your password.")
+        if (password.length < 6) {
+            showToast("Password must be at least 6 characters.")
             return
         }
-
         if (password != confirmPassword) {
             showToast("Passwords do not match.")
             return
         }
 
-        registerUser(username, password)
-    }
+        btnRegister.isEnabled = false
+        showToast("Creating account...")
 
-    private fun registerUser(username: String, password: String) {
-        UserSession.onRegister(this, username)
-        showToast("Registration successful for $username")
-        startActivity(
-            Intent(this, SoundboardActivity::class.java).addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            )
+        UserSession.firebaseRegister(
+            email = email,
+            password = password,
+            firstName = firstName,
+            lastName = lastName,
+            middleName = middleName.ifBlank { null },
+            onSuccess = {
+                val displayName = listOfNotNull(
+                    firstName,
+                    middleName.takeIf { it.isNotBlank() },
+                    lastName
+                ).joinToString(" ")
+                UserSession.onFirebaseAuthSuccess(this, email, displayName)
+                showToast("Registered! Profile saved to Firestore.")
+                startActivity(
+                    Intent(this, SoundboardActivity::class.java).addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    )
+                )
+                finish()
+            },
+            onError = { message ->
+                btnRegister.isEnabled = true
+                showToast(message)
+            }
         )
-        finish()
     }
 
     private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 }

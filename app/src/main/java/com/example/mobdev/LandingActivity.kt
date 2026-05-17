@@ -30,6 +30,7 @@ class LandingActivity : Activity() {
         }
 
         guest.setOnClickListener {
+            UserSession.firebaseSignOut()
             UserSession.onGuestContinue(this)
             Toast.makeText(this, "Continuing as guest", Toast.LENGTH_SHORT).show()
             startActivity(Intent(this, SoundboardActivity::class.java))
