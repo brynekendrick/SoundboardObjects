@@ -2,6 +2,7 @@ package com.example.mobdev
 
 import android.os.Bundle
 import android.widget.Button
+import androidx.appcompat.app.AlertDialog
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
@@ -49,6 +50,24 @@ class EditProfileActivity : AppCompatActivity() {
     }
 
     private fun loadUserData() {
+        if (!UserSession.isFirebaseSignedIn()) {
+            bindLocalProfile()
+            return
+        }
+        UserSession.firebaseReadProfile(
+            onSuccess = { profile ->
+                usernameEditText.setText(profile.displayName())
+                emailEditText.setText(profile.email)
+                val bio = profile.bio
+                bioEditText.setText(
+                    if (bio.isNullOrBlank()) "I love creating and sharing sound effects!" else bio
+                )
+            },
+            onError = { bindLocalProfile() }
+        )
+    }
+
+    private fun bindLocalProfile() {
         usernameEditText.setText(UserSession.getUsername(this))
         emailEditText.setText(UserSession.getEmail(this))
         val bio = UserSession.getBio(this)
@@ -59,9 +78,35 @@ class EditProfileActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         saveButton.setOnClickListener { saveUserData() }
+        findViewById<Button>(R.id.button_delete_profile).setOnClickListener {
+            confirmDeleteProfile()
+        }
         profileImageView.setOnClickListener {
             Toast.makeText(this, "Change profile picture feature coming soon", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun confirmDeleteProfile() {
+        if (!UserSession.isFirebaseSignedIn()) {
+            Toast.makeText(this, "Sign in to delete cloud profile.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Delete cloud profile?")
+            .setMessage("Removes your Firestore user document and saved sounds. Your login account stays in Firebase Auth.")
+            .setPositiveButton("Delete") { _, _ ->
+                UserSession.firebaseDeleteProfile(
+                    onSuccess = {
+                        Toast.makeText(this, "Cloud profile deleted", Toast.LENGTH_SHORT).show()
+                        finish()
+                    },
+                    onError = { msg ->
+                        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+                    }
+                )
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun saveUserData() {

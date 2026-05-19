@@ -2,15 +2,11 @@ package com.example.mobdev
 
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.UUID
-
 /**
  * SharedPreferences session + Firebase Auth/Firestore (users collection).
  */
@@ -25,8 +21,6 @@ object UserSession {
     private const val KEY_CUSTOM_SOUNDS_JSON = "custom_sounds_json"
 
     private val firebaseAuth: FirebaseAuth get() = FirebaseAuth.getInstance()
-    private val firestore: FirebaseFirestore get() = FirebaseFirestore.getInstance()
-
     private fun prefs(ctx: Context) =
         ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -137,20 +131,64 @@ object UserSession {
         }
     }
 
-    fun appendCustomSound(ctx: Context, title: String, uriString: String) {
+    fun appendCustomSound(ctx: Context, id: String, title: String, uriString: String) {
         val arr = try {
             JSONArray(getCustomSoundsJson(ctx))
         } catch (_: Exception) {
             JSONArray()
         }
         val o = JSONObject().apply {
-            put("id", "import-${UUID.randomUUID()}")
+            put("id", id)
             put("title", title)
             put("uri", uriString)
         }
         arr.put(o)
         saveCustomSoundsJson(ctx, arr.toString())
         incrementCreatedSounds(ctx)
+    }
+
+    fun updateCustomSound(ctx: Context, id: String, title: String) {
+        val arr = try {
+            JSONArray(getCustomSoundsJson(ctx))
+        } catch (_: Exception) {
+            return
+        }
+        for (i in 0 until arr.length()) {
+            val o = arr.getJSONObject(i)
+            if (o.getString("id") == id) {
+                o.put("title", title)
+                break
+            }
+        }
+        saveCustomSoundsJson(ctx, arr.toString())
+    }
+
+    fun removeCustomSound(ctx: Context, id: String) {
+        val arr = try {
+            JSONArray(getCustomSoundsJson(ctx))
+        } catch (_: Exception) {
+            return
+        }
+        val next = JSONArray()
+        for (i in 0 until arr.length()) {
+            val o = arr.getJSONObject(i)
+            if (o.getString("id") != id) next.put(o)
+        }
+        saveCustomSoundsJson(ctx, next.toString())
+    }
+
+    fun replaceCustomSounds(ctx: Context, entries: List<CustomSoundEntry>) {
+        val arr = JSONArray()
+        entries.forEach { e ->
+            arr.put(
+                JSONObject().apply {
+                    put("id", e.id)
+                    put("title", e.title)
+                    put("uri", e.uriString)
+                }
+            )
+        }
+        saveCustomSoundsJson(ctx, arr.toString())
     }
 
     // --- Firebase ---
@@ -177,7 +215,7 @@ object UserSession {
                     onError("Registration failed: no user id.")
                     return@addOnSuccessListener
                 }
-                writeFirestoreUser(uid, firstName, lastName, middleName, email, null, onSuccess, onError)
+                FirestoreCrud.createUser(firstName, lastName, middleName, email, null, onSuccess, onError)
             }
             .addOnFailureListener { e ->
                 onError(e.message ?: "Registration failed.")
@@ -197,6 +235,13 @@ object UserSession {
             }
     }
 
+    fun firebaseReadProfile(
+        onSuccess: (FirestoreCrud.UserRecord) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        FirestoreCrud.readUser(onSuccess, onError)
+    }
+
     fun firebaseSaveProfile(
         firstName: String,
         lastName: String,
@@ -205,40 +250,13 @@ object UserSession {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val uid = firebaseAuth.currentUser?.uid
-        if (uid == null) {
-            onError("Not signed in.")
-            return
-        }
-        writeFirestoreUser(uid, firstName, lastName, null, email, bio, onSuccess, onError)
+        FirestoreCrud.updateUser(firstName, lastName, null, email, bio, onSuccess, onError)
     }
 
-    private fun writeFirestoreUser(
-        uid: String,
-        firstName: String,
-        lastName: String,
-        middleName: String?,
-        email: String,
-        bio: String?,
+    fun firebaseDeleteProfile(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val data = hashMapOf<String, Any>(
-            "firstName" to firstName,
-            "lastName" to lastName,
-            "email" to email
-        )
-        if (!middleName.isNullOrBlank()) {
-            data["middleName"] = middleName
-        }
-        if (!bio.isNullOrBlank()) {
-            data["bio"] = bio
-        }
-        firestore.collection("users").document(uid)
-            .set(data, SetOptions.merge())
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e ->
-                onError(e.message ?: "Could not save to Firestore.")
-            }
+        FirestoreCrud.deleteUser(onSuccess, onError)
     }
 }

@@ -114,6 +114,15 @@
                 android:text="Save Changes"
                 android:textColor="@color/black" />
 
+            <Button
+                android:id="@+id/button_delete_profile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:backgroundTint="#E53935"
+                android:text="Delete Cloud Profile"
+                android:textColor="@color/white" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

@@ -39,13 +39,25 @@ class LoginActivity : Activity() {
                 email = email,
                 password = password,
                 onSuccess = {
-                    UserSession.onFirebaseAuthSuccess(
-                        this,
-                        email,
-                        email.substringBefore("@")
+                    UserSession.firebaseReadProfile(
+                        onSuccess = { profile ->
+                            UserSession.onFirebaseAuthSuccess(
+                                this,
+                                profile.email.ifBlank { email },
+                                profile.displayName().ifBlank { email.substringBefore("@") },
+                                profile.bio
+                            )
+                            goToSoundboard()
+                        },
+                        onError = {
+                            UserSession.onFirebaseAuthSuccess(
+                                this,
+                                email,
+                                email.substringBefore("@")
+                            )
+                            goToSoundboard()
+                        }
                     )
-                    startActivity(Intent(this, SoundboardActivity::class.java))
-                    finish()
                 },
                 onError = { message ->
                     loginButton.isEnabled = true
@@ -61,5 +73,10 @@ class LoginActivity : Activity() {
         findViewById<TextView>(R.id.LoginRegister).setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
+    }
+
+    private fun goToSoundboard() {
+        startActivity(Intent(this, SoundboardActivity::class.java))
+        finish()
     }
 }

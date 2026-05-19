@@ -14,8 +14,10 @@ import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.mobdev.DeveloperActivity
+import com.example.mobdev.FirestoreCrud
 import com.example.mobdev.R
 import com.example.mobdev.UserSession
+import java.util.UUID
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.tabs.TabLayout
@@ -165,12 +167,123 @@ class SoundboardActivity : AppCompatActivity() {
     private fun appendImportedSound(uri: Uri) {
         val title = queryDisplayName(uri) ?: "Imported sound"
         val durationLabel = formatDurationMs(metadataDurationMs(uri))
-        UserSession.appendCustomSound(this, title, uri.toString())
-        val entries = UserSession.loadCustomSoundEntries(this)
-        val last = entries.lastOrNull() ?: return
-        soundsList.add(SoundItem(last.id, last.title, "Imports", durationLabel, last.uriString))
+        val uriString = uri.toString()
+
+        if (UserSession.isFirebaseSignedIn()) {
+            FirestoreCrud.createSound(
+                title = title,
+                uri = uriString,
+                category = "Imports",
+                duration = durationLabel,
+                onSuccess = { soundId ->
+                    UserSession.appendCustomSound(this, soundId, title, uriString)
+                    addImportedSoundToList(soundId, title, durationLabel, uriString)
+                    Toast.makeText(this, "Sound saved to Firestore", Toast.LENGTH_SHORT).show()
+                },
+                onError = { message ->
+                    val localId = "import-${UUID.randomUUID()}"
+                    UserSession.appendCustomSound(this, localId, title, uriString)
+                    addImportedSoundToList(localId, title, durationLabel, uriString)
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                }
+            )
+        } else {
+            val localId = "import-${UUID.randomUUID()}"
+            UserSession.appendCustomSound(this, localId, title, uriString)
+            addImportedSoundToList(localId, title, durationLabel, uriString)
+            Toast.makeText(this, "Sound added (local only)", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun addImportedSoundToList(
+        id: String,
+        title: String,
+        durationLabel: String,
+        uriString: String
+    ) {
+        soundsList.add(SoundItem(id, title, "Imports", durationLabel, uriString))
         filterSounds(searchView.query?.toString().orEmpty())
-        Toast.makeText(this, "Sound added to your soundboard", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showImportedSoundCrudDialog(soundItem: SoundItem) {
+        val options = arrayOf("Rename (Update)", "Delete")
+        AlertDialog.Builder(this)
+            .setTitle(soundItem.title)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showRenameDialog(soundItem)
+                    1 -> confirmDeleteSound(soundItem)
+                }
+            }
+            .show()
+    }
+
+    private fun showRenameDialog(soundItem: SoundItem) {
+        val input = android.widget.EditText(this).apply {
+            setText(soundItem.title)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Rename sound")
+            .setView(input)
+            .setPositiveButton("Save") { _, _ ->
+                val newTitle = input.text.toString().trim()
+                if (newTitle.isEmpty()) return@setPositiveButton
+                updateImportedSound(soundItem, newTitle)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun updateImportedSound(soundItem: SoundItem, newTitle: String) {
+        soundItem.title = newTitle
+        UserSession.updateCustomSound(this, soundItem.id, newTitle)
+        if (UserSession.isFirebaseSignedIn()) {
+            FirestoreCrud.updateSound(
+                soundId = soundItem.id,
+                title = newTitle,
+                onSuccess = {
+                    soundAdapter.notifyDataSetChanged()
+                    Toast.makeText(this, "Sound updated in Firestore", Toast.LENGTH_SHORT).show()
+                },
+                onError = { msg ->
+                    soundAdapter.notifyDataSetChanged()
+                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+                }
+            )
+        } else {
+            soundAdapter.notifyDataSetChanged()
+            Toast.makeText(this, "Sound renamed locally", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun confirmDeleteSound(soundItem: SoundItem) {
+        AlertDialog.Builder(this)
+            .setTitle("Delete sound?")
+            .setMessage("Remove \"${soundItem.title}\" from your imports?")
+            .setPositiveButton("Delete") { _, _ -> deleteImportedSound(soundItem) }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun deleteImportedSound(soundItem: SoundItem) {
+        soundsList.removeAll { it.id == soundItem.id }
+        UserSession.removeCustomSound(this, soundItem.id)
+        if (UserSession.isFirebaseSignedIn()) {
+            FirestoreCrud.deleteSound(
+                soundId = soundItem.id,
+                onSuccess = {
+                    filterSounds(searchView.query?.toString().orEmpty())
+                    Toast.makeText(this, "Sound deleted from Firestore", Toast.LENGTH_SHORT).show()
+                },
+                onError = { msg ->
+                    filterSounds(searchView.query?.toString().orEmpty())
+                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+                }
+            )
+        } else {
+            filterSounds(searchView.query?.toString().orEmpty())
+            Toast.makeText(this, "Sound deleted locally", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun queryDisplayName(uri: Uri): String? {
@@ -231,6 +344,12 @@ class SoundboardActivity : AppCompatActivity() {
                 soundItem.toggleFavorite()
                 soundAdapter.updateItem(position)
             }
+
+            override fun onSoundItemLongClick(soundItem: SoundItem, position: Int) {
+                if (!soundItem.isResourceSound()) {
+                    showImportedSoundCrudDialog(soundItem)
+                }
+            }
         })
 
         soundPlayer.setOnSoundCompletionListener {
@@ -255,19 +374,51 @@ class SoundboardActivity : AppCompatActivity() {
         soundsList.add(SoundItem("14", "Flowing Water", "Nature", "0:04", R.raw.flow))
         soundsList.add(SoundItem("15", "Birds Chirping", "Animals", "0:04", R.raw.bird_chirp))
 
+        loadImportedSounds {
+            soundsList.forEach {
+                if (it.isResourceSound()) {
+                    soundPlayer.loadSound(this, it.id, it.resourceId)
+                }
+            }
+            filterSounds()
+        }
+    }
+
+    private fun loadImportedSounds(onComplete: () -> Unit) {
+        if (!UserSession.isFirebaseSignedIn()) {
+            addLocalImportedSounds()
+            onComplete()
+            return
+        }
+        FirestoreCrud.readSounds(
+            onSuccess = { records ->
+                val entries = records.map {
+                    UserSession.CustomSoundEntry(it.id, it.title, it.uri)
+                }
+                UserSession.replaceCustomSounds(this, entries)
+                records.forEach { record ->
+                    val dur = record.duration.ifBlank {
+                        formatDurationMs(metadataDurationMs(Uri.parse(record.uri)))
+                    }
+                    soundsList.add(
+                        SoundItem(record.id, record.title, record.category, dur, record.uri)
+                    )
+                }
+                onComplete()
+            },
+            onError = {
+                addLocalImportedSounds()
+                onComplete()
+            }
+        )
+    }
+
+    private fun addLocalImportedSounds() {
         UserSession.loadCustomSoundEntries(this).forEach { e ->
             val uri = Uri.parse(e.uriString)
             val dur = formatDurationMs(metadataDurationMs(uri))
             soundsList.add(SoundItem(e.id, e.title, "Imports", dur, e.uriString))
         }
-
-        soundsList.forEach {
-            if (it.isResourceSound()) {
-                soundPlayer.loadSound(this, it.id, it.resourceId)
-            }
-        }
-
-        filterSounds()
     }
 
     private fun filterSounds(query: String = "") {

@@ -18,6 +18,7 @@ class SoundAdapter(
     interface OnSoundItemClickListener {
         fun onPlayButtonClick(soundItem: SoundItem, position: Int)
         fun onFavoriteButtonClick(soundItem: SoundItem, position: Int)
+        fun onSoundItemLongClick(soundItem: SoundItem, position: Int) {}
     }
 
     private var listener: OnSoundItemClickListener? = null
@@ -60,6 +61,11 @@ class SoundAdapter(
 
         holder.favoriteButton.setOnClickListener {
             listener?.onFavoriteButtonClick(soundItem, holder.adapterPosition)
+        }
+
+        holder.itemView.setOnLongClickListener {
+            listener?.onSoundItemLongClick(soundItem, holder.adapterPosition)
+            true
         }
     }
 

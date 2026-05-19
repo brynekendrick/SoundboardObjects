@@ -56,6 +56,23 @@ class ProfileActivity : AppCompatActivity() {
         textFavoritesCount.text = "—"
         textCreatedCount.text = UserSession.getCreatedSoundsCount(this).toString()
         textUsername.text = UserSession.getUsername(this)
+        if (!UserSession.isFirebaseSignedIn()) return
+
+        UserSession.firebaseReadProfile(
+            onSuccess = { profile ->
+                val name = profile.displayName()
+                if (name.isNotBlank()) {
+                    textUsername.text = name
+                    UserSession.onFirebaseAuthSuccess(
+                        this,
+                        profile.email,
+                        name,
+                        profile.bio
+                    )
+                }
+            },
+            onError = { }
+        )
     }
 
     private fun setupBottomNavigation() {
